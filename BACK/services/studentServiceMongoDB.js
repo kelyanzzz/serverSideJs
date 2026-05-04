@@ -1,30 +1,52 @@
-// TODO 1: Import the User model from ../models/userModel.js
+import User from "../models/userModel.js";
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
-// TODO 2: Import bcrypt from "bcrypt"
+const SALT_ROUNDS = 10;
 
-// TODO 3: Export the following functions using the correct Mongoose methods:
-//   - findAllStudents()          → returns all users        (hint: .find({}))
-//   - findStudentById(id)        → returns one user by id   (hint: .findById())
-//   - deleteStudentService(id)   → deletes a user by id     (hint: .findByIdAndDelete())
+// Returns all students from the database
+export const findAllStudents = async () => {
+  return await User.find({});
+};
 
-// TODO 4: Export createStudentService(newStudent)
-//   Passwords must NEVER be stored as plain text in a database.
-//   Before calling User.create(), hash the password with bcrypt:
-//
-//   const SALT_ROUNDS = 10;  // controls how expensive the hash is
-//
-//   const hashedPassword = await bcrypt.hash(newStudent.password, SALT_ROUNDS);
-//   return User.create({ ...newStudent, password: hashedPassword });
-//
-//   This function must be async because bcrypt.hash() returns a Promise.
+// Returns a single student by ID
+export const findStudentById = async (id) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new Error("Invalid student ID format");
+  }
+  return await User.findById(id);
+};
 
-// TODO 5: Export updateStudentService(id, newStudent)
-//   A user might update their profile without changing their password.
-//   Only hash if a password field is present in the update payload:
-//
-//   if (newStudent.password) {
-//     newStudent.password = await bcrypt.hash(newStudent.password, SALT_ROUNDS);
-//   }
-//   return User.findByIdAndUpdate(id, newStudent);
-//
-//   This function must also be async.
+// Creates a new student with a hashed password
+export const createStudentService = async (data) => {
+  const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
+  return await User.create({ ...data, password: hashedPassword });
+};
+
+// Updates a student — hashes password only if it was changed
+export const updateStudentService = async (id, data) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new Error("Invalid student ID format");
+  }
+  if (data.password) {
+    data.password = await bcrypt.hash(data.password, SALT_ROUNDS);
+  }
+  return await User.findByIdAndUpdate(id, data, { new: true });
+};
+
+// Deletes a student by ID
+export const deleteStudentService = async (id) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new Error("Invalid student ID format");
+  }
+  return await User.findByIdAndDelete(id);
+};
+
+// Verifies email and password for login
+export const loginService = async (email, password) => {
+  const user = await User.findOne({ email });
+  if (!user) throw new Error("User not found");
+  const isValid = await bcrypt.compare(password, user.password);
+  if (!isValid) throw new Error("Invalid password");
+  return user;
+};

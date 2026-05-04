@@ -1,37 +1,73 @@
-// TODO 1: Import the functions you need from ../services/studentServiceMongoDB.js
-
-// TODO 2: Implement each controller below
-// Each controller must:
-//   - be async
-//   - call the matching service function and await the result
-//   - respond with the correct status code and JSON
-//   - catch errors and respond with an error status code + message
+import {
+  findAllStudents,
+  findStudentById,
+  createStudentService,
+  updateStudentService,
+  deleteStudentService,
+  loginService,
+} from "../services/studentServiceMongoDB.js";
+import jwt from "jsonwebtoken";
+import "dotenv/config";
 
 export const getAllStudents = async (req, res) => {
-  // TODO: call findAllStudents(), return 200 + the array
-  // on error: return 404 + error message
+  try {
+    const students = await findAllStudents();
+    res.status(200).json(students);
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
 };
 
 export const getStudentById = async (req, res) => {
-  // TODO: get the id from req.params
-  // call findStudentById(id), return 200 + the student
-  // on error: return 404 + "Student not found"
+  try {
+    const student = await findStudentById(req.params.id);
+    if (!student) return res.status(404).json({ message: "Student not found" });
+    res.status(200).json(student);
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
 };
 
 export const createStudent = async (req, res) => {
-  // TODO: destructure name, email, password from req.body
-  // call createStudentService({ name, email, password }), return 201 + success message
-  // on error: return 500 + error message
+  try {
+    const { name, email, password, major, gpa } = req.body;
+    const newStudent = await createStudentService({ name, email, password, major, gpa });
+    const token = jwt.sign({ id: newStudent._id }, process.env.JWT_SECRET, {
+      expiresIn: "24h",
+    });
+    res.status(201).json({ token, user: newStudent });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const updateStudent = async (req, res) => {
-  // TODO: get the id from req.params
-  // call updateStudentService(id, req.body), return 200 + the updated student
-  // on error: return 500 + error message
+  try {
+    const student = await updateStudentService(req.params.id, req.body);
+    res.status(200).json({ message: "Student updated successfully", data: student });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const deleteStudent = async (req, res) => {
-  // TODO: get the id from req.params
-  // call deleteStudentService(id), return 200 + success message
-  // on error: return 500 + error message
+  try {
+    await deleteStudentService(req.params.id);
+    res.status(200).json({ message: "Student deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await loginService(email, password);
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "24h",
+    });
+    res.status(200).json({ token, user });
+  } catch (error) {
+    res.status(401).json({ message: error.message });
+  }
 };

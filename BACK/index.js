@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { connectToMongoDB } from "./config/db.js";
-import { studentRouter } from "./routes/studentsRoute.js";
+import studentRouter from "./routes/studentsRoute.js";
 import clubRouter from "./routes/clubRoute.js";
 
 const app = express();
